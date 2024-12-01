@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carte avec Clustering et Requête SQL</title>
+
+  <!-- Leaflet CSS for the map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS for clustering markers -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <!-- Leaflet Draw CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <!-- Side by side control CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.css" />
+
+  <style>
+    /* Style for the map */
+    #map {
+      height: 400px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    /* Style for the table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* Table container with scroll */
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Requête SQL Personnalisée avec Carte</h1>
+  <input type="text" id="sql-query" placeholder="Entrez votre requête SQL" oninput="clearMarkers()" />
+  <button onclick="executeQuery()">Exécuter la requête</button>
+
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <!-- Table container with scroll -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Object ID</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Settlement</th>
+          <th>Geom</th>
+        </tr>
+      </thead>
+      <tbody id="data-table-body">
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.js"></script>
+
+  <script>
+    // Initialize the map
+    const map = L.map('map').setView([31.7917, -7.0926], 6); // Coordinates of Morocco
+
+    // Add OpenStreetMap base layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+
+    let markers = L.markerClusterGroup();  // Declare the markers globally
+
+    // Function to execute the query and fetch data from the API
+    async function executeQuery() {
+      const sqlQuery = document.getElementById('sql-query').value;
+
+      try {
+        const response = await fetch('http://localhost:3000/api/buildings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sqlQuery })
+        });
+
+        if (!response.ok) throw new Error('Erreur lors de la récupération des données');
+        const data = await response.json();
+        populateTable(data);  // Populate the table with data
+        displayMarkers(data);  // Display markers on the map
+      } catch (error) {
+        console.error(error);
+        alert('Erreur lors de la récupération des données');
+      }
+    }
+
+    // Function to populate the table with the fetched data
+    function populateTable(data) {
+      const tableBody = document.getElementById('data-table-body');
+      tableBody.innerHTML = '';  // Clear the table body before adding data
+
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        const status = row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché";
+
+        tr.innerHTML = `
+          <td>${row.id}</td>
+          <td>${row.objectid}</td>
+          <td>${status}</td>
+          <td>${row.date}</td>
+          <td>${row.settlement}</td>
+          <td>${row.geom}</td>
+        `;
+        
+        tableBody.appendChild(tr);  // Add the row to the table body
+      });
+    }
+
+    // Function to display the markers on the map with clustering
+    function displayMarkers(data) {
+      markers.clearLayers();  // Clear the previous markers
+
+      data.forEach(row => {
+        const geom = JSON.parse(row.geom);  // Parse GeoJSON geometry
+
+        if (geom.type === "Point") {
+          const [lon, lat] = geom.coordinates;
+
+          // Determine the color based on the status
+          let color = "blue";  // Default for "Non Touché"
+          if (row.status === 13) {
+            color = "red";  // Damaged
+          } else if (row.status === 4) {
+            color = "orange";  // Possible Damaged
+          }
+
+          // Create a marker with a specific color
+          const marker = L.marker([lat, lon], {
+            icon: L.divIcon({
+              className: 'leaflet-div-icon',
+              html: `<div style="background-color:${color};border-radius:50%;width:12px;height:12px;"></div>`
+            })
+          });
+
+          // Add a popup with the status
+          marker.bindPopup(`Status: ${row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché"}`);
+          markers.addLayer(marker);  // Add the marker to the cluster
+        }
+      });
+
+      map.addLayer(markers);  // Add the cluster group to the map
+    }
+
+    // Function to clear markers when the input is empty
+    function clearMarkers() {
+      if (document.getElementById('sql-query').value === "") {
+        markers.clearLayers();  // Clear the map markers when the input is empty
+      }
+    }
+  </script>
+</body>
+</html>
