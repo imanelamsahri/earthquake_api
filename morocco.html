@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carte avec Clustering de Marqueurs</title>
 
+  <!-- Leaflet CSS for the map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS for clustering markers -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
@@ -46,12 +48,7 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Object ID</th>
-          <th>Status</th>
-          <th>Date</th>
-          <th>Settlement</th>
-          <th>Geom</th>
+          <!-- Dynamically populated columns based on the query -->
         </tr>
       </thead>
       <tbody id="data-table-body">
@@ -68,11 +65,12 @@
 
     let markers = L.markerClusterGroup();  // Declare the markers globally
 
+    // Function to execute SQL queries and fetch data from the API
     async function executeQuery() {
       const sqlQuery = document.getElementById('sql-query').value;
 
       try {
-        const response = await fetch('http://localhost:3000/api/buildings', {
+        const response = await fetch('http://localhost:3000/api/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: sqlQuery })
@@ -88,53 +86,65 @@
       }
     }
 
+    // Populate table with query results
     function populateTable(data) {
       const tableBody = document.getElementById('data-table-body');
-      tableBody.innerHTML = '';
+      const tableHeader = document.querySelector('thead tr');
+      
+      tableBody.innerHTML = ''; // Clear previous results
+      tableHeader.innerHTML = ''; // Clear header
+      
+      // If data is an array (multiple rows)
+      if (Array.isArray(data)) {
+        // Add table headers dynamically
+        const headers = Object.keys(data[0]);
+        headers.forEach(header => {
+          const th = document.createElement('th');
+          th.innerText = header;
+          tableHeader.appendChild(th);
+        });
 
-      data.forEach(row => {
+        // Add table rows
+        data.forEach(row => {
+          const tr = document.createElement('tr');
+          Object.values(row).forEach(value => {
+            const td = document.createElement('td');
+            td.innerText = value;
+            tr.appendChild(td);
+          });
+          tableBody.appendChild(tr);
+        });
+      }
+      else {
+        // If result is a single value, display it in a single row
         const tr = document.createElement('tr');
-        const status = row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché";
-        tr.innerHTML = `
-          <td>${row.id}</td>
-          <td>${row.objectid}</td>
-          <td>${status}</td>
-          <td>${row.date}</td>
-          <td>${row.settlement}</td>
-          <td>${row.geom}</td>
-        `;
+        const td = document.createElement('td');
+        td.innerText = data;
+        tr.appendChild(td);
         tableBody.appendChild(tr);
-      });
+      }
     }
 
+    // Function to display map markers (if applicable)
     function displayMarkers(data) {
-      markers.clearLayers();  // Clear the previous markers
+      markers.clearLayers(); // Clear any previous markers
 
       data.forEach(row => {
-        const geom = JSON.parse(row.geom);  // Parse GeoJSON geometry
-
-        if (geom.type === "Point") {
+        const geom = row.geom ? JSON.parse(row.geom) : null; // Parse GeoJSON if available
+        if (geom && geom.type === 'Point') {
           const [lon, lat] = geom.coordinates;
-          let color = row.status === 13 ? "red" : row.status === 4 ? "orange" : "blue";
-
-          const marker = L.marker([lat, lon], {
-            icon: L.divIcon({
-              className: 'leaflet-div-icon',
-              html: `<div style="background-color:${color};border-radius:50%;width:12px;height:12px;"></div>`
-            })
-          });
-
-          marker.bindPopup(`Status: ${row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché"}`);
+          const marker = L.marker([lat, lon]);
           markers.addLayer(marker);
         }
       });
 
-      map.addLayer(markers);  // Add the cluster group to the map
+      map.addLayer(markers); // Add markers to map
     }
 
+    // Clear markers if the input field is empty
     function clearMarkers() {
       if (document.getElementById('sql-query').value === "") {
-        markers.clearLayers();  // Clear the map markers when the input is empty
+        markers.clearLayers(); // Clear map markers
       }
     }
   </script>
