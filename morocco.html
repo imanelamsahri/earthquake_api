@@ -3,27 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carte avec Clustering et Requête SQL</title>
+  <title>Carte avec Clustering de Marqueurs</title>
 
-  <!-- Leaflet CSS for the map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <!-- Leaflet MarkerCluster CSS for clustering markers -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
-  <!-- Leaflet Draw CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-  <!-- Side by side control CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.css" />
 
   <style>
-    /* Style for the map */
     #map {
       height: 400px;
       width: 100%;
       margin-bottom: 20px;
     }
-
-    /* Style for the table */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -36,8 +27,6 @@
     th {
       background-color: #f2f2f2;
     }
-
-    /* Table container with scroll */
     .table-container {
       max-height: 300px;
       overflow-y: auto;
@@ -51,10 +40,8 @@
   <input type="text" id="sql-query" placeholder="Entrez votre requête SQL" oninput="clearMarkers()" />
   <button onclick="executeQuery()">Exécuter la requête</button>
 
-  <!-- Map container -->
   <div id="map"></div>
 
-  <!-- Table container with scroll -->
   <div class="table-container">
     <table>
       <thead>
@@ -72,24 +59,15 @@
     </table>
   </div>
 
-  <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-  <script src="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.js"></script>
 
   <script>
-    // Initialize the map
-    const map = L.map('map').setView([31.7917, -7.0926], 6); // Coordinates of Morocco
-
-    // Add OpenStreetMap base layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-    }).addTo(map);
+    const map = L.map('map').setView([31.7917, -7.0926], 6);  // Coordinates of Morocco
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
     let markers = L.markerClusterGroup();  // Declare the markers globally
 
-    // Function to execute the query and fetch data from the API
     async function executeQuery() {
       const sqlQuery = document.getElementById('sql-query').value;
 
@@ -102,23 +80,21 @@
 
         if (!response.ok) throw new Error('Erreur lors de la récupération des données');
         const data = await response.json();
-        populateTable(data);  // Populate the table with data
-        displayMarkers(data);  // Display markers on the map
+        populateTable(data);
+        displayMarkers(data);
       } catch (error) {
         console.error(error);
         alert('Erreur lors de la récupération des données');
       }
     }
 
-    // Function to populate the table with the fetched data
     function populateTable(data) {
       const tableBody = document.getElementById('data-table-body');
-      tableBody.innerHTML = '';  // Clear the table body before adding data
+      tableBody.innerHTML = '';
 
       data.forEach(row => {
         const tr = document.createElement('tr');
         const status = row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché";
-
         tr.innerHTML = `
           <td>${row.id}</td>
           <td>${row.objectid}</td>
@@ -127,12 +103,10 @@
           <td>${row.settlement}</td>
           <td>${row.geom}</td>
         `;
-        
-        tableBody.appendChild(tr);  // Add the row to the table body
+        tableBody.appendChild(tr);
       });
     }
 
-    // Function to display the markers on the map with clustering
     function displayMarkers(data) {
       markers.clearLayers();  // Clear the previous markers
 
@@ -141,16 +115,8 @@
 
         if (geom.type === "Point") {
           const [lon, lat] = geom.coordinates;
+          let color = row.status === 13 ? "red" : row.status === 4 ? "orange" : "blue";
 
-          // Determine the color based on the status
-          let color = "blue";  // Default for "Non Touché"
-          if (row.status === 13) {
-            color = "red";  // Damaged
-          } else if (row.status === 4) {
-            color = "orange";  // Possible Damaged
-          }
-
-          // Create a marker with a specific color
           const marker = L.marker([lat, lon], {
             icon: L.divIcon({
               className: 'leaflet-div-icon',
@@ -158,16 +124,14 @@
             })
           });
 
-          // Add a popup with the status
           marker.bindPopup(`Status: ${row.status === 13 ? "Damaged" : row.status === 4 ? "Possible Damaged" : "Non Touché"}`);
-          markers.addLayer(marker);  // Add the marker to the cluster
+          markers.addLayer(marker);
         }
       });
 
       map.addLayer(markers);  // Add the cluster group to the map
     }
 
-    // Function to clear markers when the input is empty
     function clearMarkers() {
       if (document.getElementById('sql-query').value === "") {
         markers.clearLayers();  // Clear the map markers when the input is empty
