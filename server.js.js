@@ -13,7 +13,7 @@ app.use(express.json());
 
 // PostgreSQL database connection configuration
 const client = new Client({
-  user: 'postgres',
+  user: 'postgres', // Your PostgreSQL username
   host: 'localhost',
   database: 'tremblement_de_terre',
   password: 'your_password',
@@ -26,11 +26,10 @@ client.connect()
   .catch(err => console.error('Connection error', err.stack));
 
 // API to execute the SQL query
-app.post('/api/buildings', async (req, res) => {
+app.post('/api/query', async (req, res) => {
   const { query } = req.body;
 
   try {
-    // Execute the query and send the result as JSON
     const result = await client.query(query);
     res.json(result.rows); // Send the result as JSON
   } catch (error) {
