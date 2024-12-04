@@ -27,6 +27,7 @@ client.connect()
   })
   .catch((err) => {
     console.error('Erreur de connexion à PostgreSQL', err.stack);
+    process.exit(1);  // Ferme l'application si la connexion échoue
   });
 
 // Exemple de route pour exécuter une requête SQL
@@ -47,7 +48,7 @@ app.post('/api/query', async (req, res) => {
   }
 });
 
-// Démarrer le serveur Node.js
-app.listen(port, () => {
-  console.log(`Serveur backend lancé sur http://localhost:${port}`);
+// Démarrer le serveur Node.js en écoutant sur 0.0.0.0 pour accepter toutes les connexions
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Serveur backend lancé sur http://13.60.169.209:${port}`);  // Remplace par l'IP publique de ton EC2
 });
