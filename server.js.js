@@ -13,32 +13,36 @@ app.use(express.json());
 
 // PostgreSQL database connection configuration
 const client = new Client({
-  user: 'postgres', // Your PostgreSQL username
-  host: 'localhost',
-  database: 'tremblement_de_terre',
-  password: 'your_password',
-  port: 5432,
+  user: 'postgres', // Votre nom d'utilisateur PostgreSQL
+  host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Point de terminaison de votre base de données RDS
+  database: 'tremblement_de_terre', // Nom de votre base de données
+  password: 'votre-mot-de-passe', // Remplacez par votre mot de passe
+  port: 5432, // Le port par défaut pour PostgreSQL
 });
 
-// Connect to PostgreSQL
+// Connexion à PostgreSQL
 client.connect()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Connection error', err.stack));
+  .then(() => {
+    console.log('Connexion à PostgreSQL réussie!');
+  })
+  .catch((err) => {
+    console.error('Erreur de connexion à PostgreSQL', err.stack);
+  });
 
-// API to execute the SQL query
+// Exemple de route pour exécuter une requête SQL
 app.post('/api/query', async (req, res) => {
-  const { query } = req.body;
+  const query = req.body.query;
 
   try {
     const result = await client.query(query);
-    res.json(result.rows); // Send the result as JSON
-  } catch (error) {
-    console.error('Error executing query', error);
-    res.status(500).json({ error: 'Error executing query' });
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur lors de l\'exécution de la requête SQL' });
   }
 });
 
-// Start the server
+// Démarrer le serveur Node.js
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Serveur backend lancé sur http://localhost:${port}`);
 });
