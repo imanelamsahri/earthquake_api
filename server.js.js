@@ -33,11 +33,16 @@ client.connect()
 app.post('/api/query', async (req, res) => {
   const query = req.body.query;
 
+  // Vérification si la requête est présente dans le corps de la requête
+  if (!query) {
+    return res.status(400).json({ error: 'La requête SQL est requise dans le corps de la requête' });
+  }
+
   try {
     const result = await client.query(query);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Erreur lors de l\'exécution de la requête SQL', err.stack);
     res.status(500).json({ error: 'Erreur lors de l\'exécution de la requête SQL' });
   }
 });
