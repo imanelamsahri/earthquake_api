@@ -16,7 +16,7 @@ const client = new Client({
   user: 'postgres', // Votre nom d'utilisateur PostgreSQL
   host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Point de terminaison de votre base de données RDS
   database: 'tremblement_de_terre', // Nom de votre base de données
-  password: 'votre-mot-de-passe', // Remplacez par votre mot de passe
+  password: 'Mimiimane123++', // Remplacez par votre mot de passe
   port: 5432, // Le port par défaut pour PostgreSQL
 });
 
