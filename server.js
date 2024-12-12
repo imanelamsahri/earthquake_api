@@ -1,3 +1,5 @@
+const fs = require('fs');
+const https = require('https');
 const express = require('express');
 const { Client } = require('pg');
 const cors = require('cors');
@@ -13,11 +15,11 @@ app.use(express.json());
 
 // PostgreSQL database connection configuration
 const client = new Client({
-  user: 'postgres', // Nom d'utilisateur PostgreSQL
-  host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Adresse RDS
-  database: 'tremblement_de_terre', // Nom de la base de données
-  password: 'Mimiimane123++', // Mot de passe PostgreSQL
-  port: 5432, // Port PostgreSQL
+  user: 'postgres', // Votre nom d'utilisateur PostgreSQL
+  host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Point de terminaison de votre base de données RDS
+  database: 'tremblement_de_terre', // Nom de votre base de données
+  password: 'Mimiimane123++', // Remplacez par votre mot de passe
+  port: 5432, // Le port par défaut pour PostgreSQL
 });
 
 // Connexion à PostgreSQL
@@ -29,16 +31,11 @@ client.connect()
     console.error('Erreur de connexion à PostgreSQL :', err.stack);
   });
 
-// Route pour vérifier que le backend fonctionne
-app.get('/', (req, res) => {
-  res.send('Bienvenue sur le backend de votre application!');
-});
-
-// Route pour exécuter une requête SQL
+// Exemple de route pour exécuter une requête SQL
 app.post('/api/query', async (req, res) => {
   const query = req.body.query;
 
-  // Vérification si la requête SQL est présente dans le corps
+  // Vérification si la requête SQL est présente dans le corps de la requête
   if (!query) {
     return res.status(400).json({ error: 'La requête SQL est requise dans le corps de la requête' });
   }
@@ -52,12 +49,12 @@ app.post('/api/query', async (req, res) => {
   }
 });
 
-// Gestion des routes non définies
-app.use((req, res, next) => {
-  res.status(404).json({ error: 'Route non trouvée' });
-});
+// Démarrer le serveur HTTPS
+const options = {
+  key: fs.readFileSync('/home/ubuntu/ssl/server.key'),
+  cert: fs.readFileSync('/home/ubuntu/ssl/server.crt')
+};
 
-// Démarrer le serveur Node.js
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Serveur backend lancé sur http://13.60.84.6:${port}`);
+https.createServer(options, app).listen(port, () => {
+  console.log(`Serveur backend lancé sur https://13.60.84.6:${port}`);
 });
