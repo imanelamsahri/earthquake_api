@@ -13,11 +13,11 @@ app.use(express.json());
 
 // PostgreSQL database connection configuration
 const client = new Client({
-  user: 'postgres', // Votre nom d'utilisateur PostgreSQL
-  host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Point de terminaison de votre base de données RDS
-  database: 'tremblement_de_terre', // Nom de votre base de données
-  password: 'Mimiimane123++', // Remplacez par votre mot de passe
-  port: 5432, // Le port par défaut pour PostgreSQL
+  user: 'postgres', // Nom d'utilisateur PostgreSQL
+  host: 'trial.crcke0iwou72.eu-north-1.rds.amazonaws.com', // Adresse RDS
+  database: 'tremblement_de_terre', // Nom de la base de données
+  password: 'Mimiimane123++', // Mot de passe PostgreSQL
+  port: 5432, // Port PostgreSQL
 });
 
 // Connexion à PostgreSQL
@@ -26,28 +26,38 @@ client.connect()
     console.log('Connexion à PostgreSQL réussie!');
   })
   .catch((err) => {
-    console.error('Erreur de connexion à PostgreSQL', err.stack);
+    console.error('Erreur de connexion à PostgreSQL :', err.stack);
   });
 
-// Exemple de route pour exécuter une requête SQL
+// Route pour vérifier que le backend fonctionne
+app.get('/', (req, res) => {
+  res.send('Bienvenue sur le backend de votre application!');
+});
+
+// Route pour exécuter une requête SQL
 app.post('/api/query', async (req, res) => {
   const query = req.body.query;
 
-  // Vérification si la requête est présente dans le corps de la requête
+  // Vérification si la requête SQL est présente dans le corps
   if (!query) {
     return res.status(400).json({ error: 'La requête SQL est requise dans le corps de la requête' });
   }
 
   try {
     const result = await client.query(query);
-    res.json(result.rows);
+    res.json(result.rows); // Renvoie les résultats de la requête SQL
   } catch (err) {
-    console.error('Erreur lors de l\'exécution de la requête SQL', err.stack);
+    console.error('Erreur lors de l\'exécution de la requête SQL :', err.stack);
     res.status(500).json({ error: 'Erreur lors de l\'exécution de la requête SQL' });
   }
 });
 
+// Gestion des routes non définies
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Route non trouvée' });
+});
+
 // Démarrer le serveur Node.js
-app.listen(port, '0.0.0.0', () => {  // L'adresse "0.0.0.0" permet d'accepter des connexions de n'importe où
-  console.log(`Serveur backend lancé sur http://0.0.0.0:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Serveur backend lancé sur http://13.60.84.6:${port}`);
 });
